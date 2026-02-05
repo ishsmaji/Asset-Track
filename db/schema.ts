@@ -17,7 +17,7 @@ import {
    ENUMS
 ============================================================ */
 
-export const organizationTypeEnum = pgEnum("org_type", [
+export const organization_type_enum = pgEnum("org_type", [
   "Government",
   "Corporate",
   "Education",
@@ -25,7 +25,7 @@ export const organizationTypeEnum = pgEnum("org_type", [
   "Non-Profit",
 ]);
 
-export const userRoleEnum = pgEnum("user_role", [
+export const user_role_enum = pgEnum("user_role", [
   "User",
   "Approver",
   "Auditor",
@@ -33,7 +33,7 @@ export const userRoleEnum = pgEnum("user_role", [
   "Parent-Admin",
 ]);
 
-export const requisitionStatusEnum = pgEnum("requisition_status", [
+export const requisition_status_enum = pgEnum("requisition_status", [
   "Pending",
   "Approved",
   "Rejected",
@@ -43,59 +43,60 @@ export const requisitionStatusEnum = pgEnum("requisition_status", [
   "Moved-To-Registry",
 ]);
 
-export const requisitionTypeEnum = pgEnum("requisition_type", [
-  "PURCHASE",
-  "MAINTENANCE",
+export const requisition_type_enum = pgEnum("requisition_type", [
+  "Purchase",
+  "Maintenance",
 ]);
 
-export const assetConditionEnum = pgEnum("asset_condition", [
+export const asset_condition_enum = pgEnum("asset_condition", [
   "New",
   "Good",
   "Damaged",
   "Repair-Required",
 ]);
 
-export const assetStatusEnum = pgEnum("asset_status", [
+export const asset_status_enum = pgEnum("asset_status", [
   "Active",
   "Unused",
   "Under-Maintenance",
   "Transfered",
 ]);
 
-export const assignmentStageEnum = pgEnum("assignment_stage", [
-  "TO_APPROVER",
-  "TO_AUDITOR",
+export const assignment_stage_enum = pgEnum("assignment_stage", [
+  "To_Approver",
+  "To_Auditor",
+  "Completed"
 ]);
 
-export const approvalActionEnum = pgEnum("approval_action", [
-  "APPROVED",
-  "REJECTED",
+export const approval_action_enum = pgEnum("approval_action", [
+  "Approved",
+  "Rejected",
 ]);
 
-export const assetActionTypeEnum = pgEnum("asset_action_type", [
-  "ASSIGN_USER",
-  "TRANSFER_BRANCH",
-  "MAINTENANCE",
-  "MARK_UNUSED",
+export const asset_action_type_enum = pgEnum("asset_action_type", [
+  "Assign_User",
+  "Transfer_Branch",
+  "Maintenance",
+  "Mark_Unused",
 ]);
 
 /* ============================================================
-   SUBSCRIPTION PLANS (DO NOT CHANGE)
+   SUBSCRIPTION PLANS
 ============================================================ */
 
-export const subscriptionPlans = pgTable("subscription_plans", {
+export const subscription_plans = pgTable("subscription_plans", {
   id: serial("id").primaryKey(),
 
   name: varchar("name", { length: 50 }).notNull().unique(),
-  monthlyPrice: decimal("monthly_price", { precision: 10, scale: 2 }).notNull(),
+  monthly_price: decimal("monthly_price", { precision: 10, scale: 2 }).notNull(),
 
-  maxAssets: integer("max_assets").notNull(),
-  maxUsers: integer("max_users").notNull(),
+  max_assets: integer("max_assets").notNull(),
+  max_users: integer("max_users").notNull(),
 
   features: text("features").array().notNull(),
 
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
 });
 
 /* ============================================================
@@ -106,13 +107,13 @@ export const organizations = pgTable("organizations", {
   id: serial("id").primaryKey(),
 
   name: varchar("name", { length: 255 }).notNull().unique(),
-  type: organizationTypeEnum("type").notNull(),
+  type: organization_type_enum("type").notNull(),
 
-  planId: integer("plan_id")
-    .references(() => subscriptionPlans.id, { onDelete: "restrict" })
+  plan_id: integer("plan_id")
+    .references(() => subscription_plans.id, { onDelete: "restrict" })
     .notNull(),
 
-  createdAt: timestamp("created_at").defaultNow(),
+  created_at: timestamp("created_at").defaultNow(),
 });
 
 /* ============================================================
@@ -124,7 +125,7 @@ export const branches = pgTable(
   {
     id: serial("id").primaryKey(),
 
-    orgId: integer("org_id")
+    org_id: integer("org_id")
       .references(() => organizations.id, { onDelete: "cascade" })
       .notNull(),
 
@@ -133,19 +134,19 @@ export const branches = pgTable(
 
     address: text("address").notNull(),
 
-    createdAt: timestamp("created_at").defaultNow(),
+    created_at: timestamp("created_at").defaultNow(),
   },
   (t) => ({
-    uniqueBranchCodePerOrg: unique("unique_branch_code_per_org").on(
-      t.orgId,
+    unique_branch_code_per_org: unique("unique_branch_code_per_org").on(
+      t.org_id,
       t.code
     ),
-    orgIdx: index("idx_branches_org_id").on(t.orgId),
+    idx_branches_org_id: index("idx_branches_org_id").on(t.org_id),
   })
 );
 
 /* ============================================================
-   USERS (branchId is nullable)
+   USERS
 ============================================================ */
 
 export const users = pgTable(
@@ -153,11 +154,11 @@ export const users = pgTable(
   {
     id: serial("id").primaryKey(),
 
-    orgId: integer("org_id")
+    org_id: integer("org_id")
       .references(() => organizations.id, { onDelete: "cascade" })
       .notNull(),
 
-    branchId: integer("branch_id").references(() => branches.id, {
+    branch_id: integer("branch_id").references(() => branches.id, {
       onDelete: "set null",
     }),
 
@@ -167,70 +168,69 @@ export const users = pgTable(
 
     password: varchar("password", { length: 255 }).notNull(),
 
-    role: userRoleEnum("role").notNull().default("User"),
+    role: user_role_enum("role").notNull().default("User"),
 
-    isActive: boolean("is_active").notNull().default(true),
+    is_active: boolean("is_active").notNull().default(true),
 
     token: varchar("token", { length: 512 }),
 
     otp: varchar("otp", { length: 6 }),
-    otpExpiry: timestamp("otp_expiry"),
+    otp_expiry: timestamp("otp_expiry"),
 
-    resetPasswordToken: varchar("reset_password_token", { length: 255 }),
-    resetPasswordExpires: bigint("reset_password_expires", { mode: "number" }),
+    reset_password_token: varchar("reset_password_token", { length: 255 }),
+    reset_password_expires: bigint("reset_password_expires", { mode: "number" }),
 
-    profileImageUrl: varchar("profile_image_url", { length: 512 }),
+    profile_image_url: varchar("profile_image_url", { length: 512 }),
 
-    createdAt: timestamp("created_at").defaultNow(),
+    created_at: timestamp("created_at").defaultNow(),
   },
   (t) => ({
-    orgIdx: index("idx_users_org_id").on(t.orgId),
-    branchIdx: index("idx_users_branch_id").on(t.branchId),
+    idx_users_org_id: index("idx_users_org_id").on(t.org_id),
+    idx_users_branch_id: index("idx_users_branch_id").on(t.branch_id),
   })
 );
 
 /* ============================================================
-   ASSET REQUISITIONS (purchase + maintenance)
+   ASSET REQUISITIONS
 ============================================================ */
 
-export const assetRequisitions = pgTable(
+export const asset_requisitions = pgTable(
   "asset_requisitions",
   {
     id: serial("id").primaryKey(),
 
-    orgId: integer("org_id")
+    org_id: integer("org_id")
       .references(() => organizations.id, { onDelete: "cascade" })
       .notNull(),
 
-    branchId: integer("branch_id").references(() => branches.id, {
+    branch_id: integer("branch_id").references(() => branches.id, {
       onDelete: "set null",
     }),
 
-    requesterId: integer("requester_id")
+    requester_id: integer("requester_id")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
 
-    requisitionType: requisitionTypeEnum("requisition_type")
+    requisition_type: requisition_type_enum("requisition_type")
       .notNull()
-      .default("PURCHASE"),
+      .default("Purchase"),
 
-    // Only for MAINTENANCE requisition
-    assetId: integer("asset_id"),
+    asset_id: integer("asset_id"),
 
-    requisitionTitle: varchar("requisition_title", { length: 255 }).notNull(),
+    requisition_title: varchar("requisition_title", { length: 255 }).notNull(),
 
     priority: varchar("priority", { length: 20 }).notNull().default("MEDIUM"),
 
-    status: requisitionStatusEnum("status").notNull().default("Pending"),
+    status: requisition_status_enum("status").notNull().default("Pending"),
 
-    createdAt: timestamp("created_at").defaultNow(),
-    updatedAt: timestamp("updated_at").defaultNow(),
+    created_at: timestamp("created_at").defaultNow(),
+    updated_at: timestamp("updated_at").defaultNow(),
   },
   (t) => ({
-    orgIdx: index("idx_req_org_id").on(t.orgId),
-    branchIdx: index("idx_req_branch_id").on(t.branchId),
-    requesterIdx: index("idx_req_requester_id").on(t.requesterId),
-    assetIdx: index("idx_req_asset_id").on(t.assetId),
+    idx_req_org_id: index("idx_req_org_id").on(t.org_id),
+    idx_req_branch_id: index("idx_req_branch_id").on(t.branch_id),
+    idx_req_requester_id: index("idx_req_requester_id").on(t.requester_id),
+    idx_req_asset_id: index("idx_req_asset_id").on(t.asset_id),
   })
 );
 
@@ -238,31 +238,31 @@ export const assetRequisitions = pgTable(
    ASSET REQUISITION ITEMS
 ============================================================ */
 
-export const assetRequisitionItems = pgTable(
+export const asset_requisition_items = pgTable(
   "asset_requisition_items",
   {
     id: serial("id").primaryKey(),
 
-    requisitionId: integer("requisition_id")
-      .references(() => assetRequisitions.id, { onDelete: "cascade" })
+    requisition_id: integer("requisition_id")
+      .references(() => asset_requisitions.id, { onDelete: "cascade" })
       .notNull(),
 
-    requestedBy: integer("requested_by")
+    requested_by: integer("requested_by")
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
 
-    assetType: varchar("asset_type", { length: 100 }).notNull(),
+    asset_type: varchar("asset_type", { length: 100 }).notNull(),
 
     quantity: integer("quantity").notNull(),
 
     specification: text("specification"),
     justification: text("justification"),
 
-    createdAt: timestamp("created_at").defaultNow(),
+    created_at: timestamp("created_at").defaultNow(),
   },
   (t) => ({
-    reqIdx: index("idx_req_items_req_id").on(t.requisitionId),
-    userIdx: index("idx_req_items_user_id").on(t.requestedBy),
+    idx_req_items_req_id: index("idx_req_items_req_id").on(t.requisition_id),
+    idx_req_items_user_id: index("idx_req_items_user_id").on(t.requested_by),
   })
 );
 
@@ -270,131 +270,130 @@ export const assetRequisitionItems = pgTable(
    REQUISITION APPROVALS
 ============================================================ */
 
-export const requisitionApprovals = pgTable("requisition_approvals", {
+export const requisition_approvals = pgTable("requisition_approvals", {
   id: serial("id").primaryKey(),
 
-  requisitionId: integer("requisition_id")
-    .references(() => assetRequisitions.id, { onDelete: "cascade" })
+  requisition_id: integer("requisition_id")
+    .references(() => asset_requisitions.id, { onDelete: "cascade" })
     .notNull(),
 
-  approverId: integer("approver_id")
+  approver_id: integer("approver_id")
     .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
 
-  action: approvalActionEnum("action").notNull(),
+  action: approval_action_enum("action").notNull(),
 
   remarks: text("remarks"),
 
-  createdAt: timestamp("created_at").defaultNow(),
+  created_at: timestamp("created_at").defaultNow(),
 });
 
 /* ============================================================
-   REQUISITION ASSIGNMENTS (Approver -> Auditor)
+   REQUISITION ASSIGNMENTS
 ============================================================ */
 
-export const requisitionAssignments = pgTable("requisition_assignments", {
+export const requisition_assignments = pgTable("requisition_assignments", {
   id: serial("id").primaryKey(),
 
-  requisitionId: integer("requisition_id")
-    .references(() => assetRequisitions.id, { onDelete: "cascade" })
+  requisition_id: integer("requisition_id")
+    .references(() => asset_requisitions.id, { onDelete: "cascade" })
     .notNull(),
 
-  assignedBy: integer("assigned_by")
+  assigned_by: integer("assigned_by")
     .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
 
-  assignedTo: integer("assigned_to")
+  assigned_to: integer("assigned_to")
     .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
 
-  stage: assignmentStageEnum("stage").notNull(),
+  stage: assignment_stage_enum("stage").notNull(),
 
   remarks: text("remarks"),
 
-  createdAt: timestamp("created_at").defaultNow(),
+  created_at: timestamp("created_at").defaultNow(),
 });
 
 /* ============================================================
    REQUISITION AUDIT LOGS
 ============================================================ */
 
-export const requisitionAuditLogs = pgTable("requisition_audit_logs", {
+export const requisition_audit_logs = pgTable("requisition_audit_logs", {
   id: serial("id").primaryKey(),
 
-  requisitionId: integer("requisition_id")
-    .references(() => assetRequisitions.id, { onDelete: "cascade" })
+  requisition_id: integer("requisition_id")
+    .references(() => asset_requisitions.id, { onDelete: "cascade" })
     .notNull(),
 
-  auditorId: integer("auditor_id")
+  auditor_id: integer("auditor_id")
     .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
 
-  invoiceUrl: varchar("invoice_url", { length: 512 }),
+  invoice_url: varchar("invoice_url", { length: 512 }),
   remarks: text("remarks"),
 
-  createdAt: timestamp("created_at").defaultNow(),
+  created_at: timestamp("created_at").defaultNow(),
 });
 
 /* ============================================================
    ASSET REGISTRY
 ============================================================ */
 
-export const assetRegistry = pgTable(
+export const asset_registry = pgTable(
   "asset_registry",
   {
     id: serial("id").primaryKey(),
 
-    orgId: integer("org_id")
+    org_id: integer("org_id")
       .references(() => organizations.id, { onDelete: "cascade" })
       .notNull(),
 
-    branchId: integer("branch_id").references(() => branches.id, {
+    branch_id: integer("branch_id").references(() => branches.id, {
       onDelete: "set null",
     }),
 
-    requisitionId: integer("requisition_id").references(
-      () => assetRequisitions.id,
+    requisition_id: integer("requisition_id").references(
+      () => asset_requisitions.id,
       { onDelete: "set null" }
     ),
 
-    assetCode: varchar("asset_code", { length: 50 }).notNull().unique(),
+    asset_code: varchar("asset_code", { length: 50 }).notNull().unique(),
 
-    assetName: varchar("asset_name", { length: 255 }).notNull(),
+    asset_name: varchar("asset_name", { length: 255 }).notNull(),
 
-    majorCategory: varchar("major_category", { length: 100 }).notNull(),
-    subCategory: varchar("sub_category", { length: 100 }),
+    major_category: varchar("major_category", { length: 100 }).notNull(),
+    sub_category: varchar("sub_category", { length: 100 }),
 
     department: varchar("department", { length: 100 }),
-    physicalLocation: varchar("physical_location", { length: 255 }),
+    physical_location: varchar("physical_location", { length: 255 }),
 
-    acquisitionDate: timestamp("acquisition_date"),
-    acquisitionCost: decimal("acquisition_cost", { precision: 12, scale: 2 }),
+    acquisition_date: timestamp("acquisition_date"),
+    acquisition_cost: decimal("acquisition_cost", { precision: 12, scale: 2 }),
 
-    supplierVendor: varchar("supplier_vendor", { length: 255 }),
+    supplier_vendor: varchar("supplier_vendor", { length: 255 }),
 
-    condition: assetConditionEnum("condition").notNull().default("New"),
-    status: assetStatusEnum("status").notNull().default("Active"),
+    condition: asset_condition_enum("condition").notNull().default("New"),
+    status: asset_status_enum("status").notNull().default("Active"),
 
-    acquisitionBy: integer("acquisition_by").references(() => users.id, {
+    acquisition_by: integer("acquisition_by").references(() => users.id, {
       onDelete: "set null",
     }),
 
     description: text("description"),
 
-    // array of URLs
     photos: text("photos").array(),
 
-    qrCodeUrl: varchar("qr_code_url", { length: 512 }),
+    qr_code_url: varchar("qr_code_url", { length: 512 }),
 
-    usedFor: varchar("used_for", { length: 255 }),
+    used_for: varchar("used_for", { length: 255 }),
 
-    movedToRegistryAt: timestamp("moved_to_registry_at").defaultNow(),
+    moved_to_registry_at: timestamp("moved_to_registry_at").defaultNow(),
 
-    createdAt: timestamp("created_at").defaultNow(),
+    created_at: timestamp("created_at").defaultNow(),
   },
   (t) => ({
-    orgIdx: index("idx_asset_org_id").on(t.orgId),
-    branchIdx: index("idx_asset_branch_id").on(t.branchId),
+    idx_asset_org_id: index("idx_asset_org_id").on(t.org_id),
+    idx_asset_branch_id: index("idx_asset_branch_id").on(t.branch_id),
   })
 );
 
@@ -402,37 +401,37 @@ export const assetRegistry = pgTable(
    ASSET ACTIONS
 ============================================================ */
 
-export const assetActions = pgTable(
+export const asset_actions = pgTable(
   "asset_actions",
   {
     id: serial("id").primaryKey(),
 
-    assetId: integer("asset_id")
-      .references(() => assetRegistry.id, { onDelete: "cascade" })
+    asset_id: integer("asset_id")
+      .references(() => asset_registry.id, { onDelete: "cascade" })
       .notNull(),
 
-    actionType: assetActionTypeEnum("action_type").notNull(),
+    action_type: asset_action_type_enum("action_type").notNull(),
 
-    fromBranchId: integer("from_branch_id").references(() => branches.id, {
+    from_branch_id: integer("from_branch_id").references(() => branches.id, {
       onDelete: "set null",
     }),
-    toBranchId: integer("to_branch_id").references(() => branches.id, {
+    to_branch_id: integer("to_branch_id").references(() => branches.id, {
       onDelete: "set null",
     }),
 
-    fromUserId: integer("from_user_id").references(() => users.id, {
+    from_user_id: integer("from_user_id").references(() => users.id, {
       onDelete: "set null",
     }),
-    toUserId: integer("to_user_id").references(() => users.id, {
+    to_user_id: integer("to_user_id").references(() => users.id, {
       onDelete: "set null",
     }),
 
     remarks: text("remarks"),
 
-    createdAt: timestamp("created_at").defaultNow(),
+    created_at: timestamp("created_at").defaultNow(),
   },
   (t) => ({
-    assetIdx: index("idx_actions_asset_id").on(t.assetId),
+    idx_actions_asset_id: index("idx_actions_asset_id").on(t.asset_id),
   })
 );
 
@@ -440,25 +439,25 @@ export const assetActions = pgTable(
    ASSET ACTIVITY TIMELINE
 ============================================================ */
 
-export const assetActivityTimeline = pgTable(
+export const asset_activity_timeline = pgTable(
   "asset_activity_timeline",
   {
     id: serial("id").primaryKey(),
 
-    assetId: integer("asset_id")
-      .references(() => assetRegistry.id, { onDelete: "cascade" })
+    asset_id: integer("asset_id")
+      .references(() => asset_registry.id, { onDelete: "cascade" })
       .notNull(),
 
-    activityTitle: varchar("activity_title", { length: 255 }).notNull(),
-    activityDetails: text("activity_details"),
+    activity_title: varchar("activity_title", { length: 255 }).notNull(),
+    activity_details: text("activity_details"),
 
-    performedBy: integer("performed_by").references(() => users.id, {
+    performed_by: integer("performed_by").references(() => users.id, {
       onDelete: "set null",
     }),
 
-    createdAt: timestamp("created_at").defaultNow(),
+    created_at: timestamp("created_at").defaultNow(),
   },
   (t) => ({
-    assetIdx: index("idx_timeline_asset_id").on(t.assetId),
+    idx_timeline_asset_id: index("idx_timeline_asset_id").on(t.asset_id),
   })
 );

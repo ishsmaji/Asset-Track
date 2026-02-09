@@ -1,74 +1,93 @@
-// import { NextResponse } from "next/server";
-// import bcrypt from "bcrypt";
-// import { db } from "@/db";
-// import { users } from "@/db/schema";
-// import { eq } from "drizzle-orm";
-// import { sendLoginOtpMail } from "@/lib/send";
+import { NextResponse } from "next/server";
+import bcrypt from "bcrypt";
+import { db } from "@/db";
+import { users } from "@/db/schema";
+import { eq } from "drizzle-orm";
+import { sendLoginOtpMail } from "@/lib/send";
 
-// function generateOTP() {
-//   return Math.floor(100000 + Math.random() * 900000).toString();
-// }
-// export async function POST(req: Request) {
-//   try {
-//     const { email, password } = await req.json();
-//     if (!email || !password) {
-//       return NextResponse.json(
-//         { message: "Email and  password required" },
-//         { status: 400 },
-//       );
-//     }
-//     const [user] = await db
-//       .select()
-//       .from(users)
-//       .where(eq(users.email, email))
-//       .limit(1);
+function generateOTP(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
 
-//     if (!user) {
-//       return NextResponse.json(
-//         { message: "Invalid email or password" },
-//         { status: 401 },
-//       );
-//     }
+type LoginBody = {
+  email: string;
+  password: string;
+};
 
-//     const isMatch = await bcrypt.compare(password, user.password);
-//     if (!isMatch) {
-//       return NextResponse.json(
-//         { message: "Invalid email or password" },
-//         { status: 401 },
-//       );
-//     }
+export async function POST(req: Request) {
+  try {
+    const body: LoginBody = await req.json();
+    const { email, password } = body;
 
-//     if (user.otp && user.otpExpiry && user.otpExpiry > new Date()) {
-//       return NextResponse.json(
-//         {
-//           message: "OTP already sent. Please wait before requesting a new one.",
-//         },
-//         { status: 429 },
-//       );
-//     }
+    if (!email || !password) {
+      return NextResponse.json(
+        { message: "Email and password required" },
+        { status: 400 }
+      );
+    }
 
-//     const otp = generateOTP();
-//     const otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
 
-//     await db
-//       .update(users)
-//       .set({
-//         otp,
-//         otpExpiry,
-//         isActive: false,
-//         token: null,
-//       })
-//       .where(eq(users.id, user.id));
-//     await sendLoginOtpMail(user.email, otp);
+    if (!user) {
+      return NextResponse.json(
+        { message: "Invalid email or password" },
+        { status: 401 }
+      );
+    }
 
-//     return NextResponse.json({
-//       message: "OTP sent to your email",
-//       userId: user.id,
-//     });
-//   } catch (error: any) {
-//     return NextResponse.json(
-//       { message: "Login failed", error: error?.message },
-//       { status: 500 },
-//     );
-//   }
-// }
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
+      return NextResponse.json(
+        { message: "Invalid email or password" },
+        { status: 401 }
+      );
+    }
+
+    if (user.otp && user.otp_expiry && user.otp_expiry > new Date()) {
+      return NextResponse.json(
+        {
+          message: "OTP already sent. Please wait before requesting a new one.",
+        },
+        { status: 429 }
+      );
+    }
+
+    const otp = generateOTP();
+    const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); 
+
+    await db
+      .update(users)
+      .set({
+        otp: otp,
+        otp_expiry: otpExpiry,
+        is_active: false,
+        token: null,
+      })
+      .where(eq(users.id, user.id));
+
+    await sendLoginOtpMail(user.email, otp);
+
+    return NextResponse.json(
+      {
+        message: "OTP sent to your email",
+        userId: user.id,
+      },
+      { status: 200 }
+    );
+  } catch (error: unknown) {
+    console.error("Login API Error:", error);
+
+    return NextResponse.json(
+      {
+        message: "Login failed",
+        error: error instanceof Error ? error.message : "Unknown error occurred",
+      },
+      { status: 500 }
+    );
+  }
+}

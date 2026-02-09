@@ -11,6 +11,7 @@ import {
   pgEnum,
   index,
   unique,
+  jsonb
 } from "drizzle-orm/pg-core";
 
 /* ============================================================
@@ -93,7 +94,7 @@ export const subscription_plans = pgTable("subscription_plans", {
   max_assets: integer("max_assets").notNull(),
   max_users: integer("max_users").notNull(),
 
-  features: text("features").array().notNull(),
+  features: jsonb("features").notNull(),
 
   created_at: timestamp("created_at").defaultNow(),
   updated_at: timestamp("updated_at").defaultNow(),

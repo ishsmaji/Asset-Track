@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { subscriptionPlans } from "@/db/schema";
+import { subscription_plans } from "@/db/schema";
 
 export async function POST(req: Request) {
   try {
@@ -8,31 +8,64 @@ export async function POST(req: Request) {
 
     const { name, monthly_price, max_assets, max_users, features } = body;
 
-    if (!name || !monthly_price || !max_assets || !max_users || !features) {
+    if (
+      !name ||
+      !monthly_price  ||
+      !max_assets ||
+      !max_users  ||
+      !features
+    ) {
       return NextResponse.json(
         { error: "All fields are required" },
         { status: 400 }
       );
     }
 
-    const result = await db.insert(subscriptionPlans).values({
-      name,
-      monthlyPrice: monthly_price,
-      maxAssets: max_assets,
-      maxUsers: max_users,  
-      features,
-    }).returning();
+    if (!Array.isArray(features)) {
+      return NextResponse.json(
+        { error: "features must be an array" },
+        { status: 400 }
+      );
+    }
+
+    const result = await db
+      .insert(subscription_plans)
+      .values({
+        name,
+        monthly_price,
+        max_assets,
+        max_users,
+        features,
+      })
+      .returning();
 
     return NextResponse.json({
       success: true,
       data: result[0],
     });
-
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(error);
 
     return NextResponse.json(
-      { error: error.message },
+      { error: error instanceof Error ? error.message : "Something went wrong" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET() {
+  try {
+    const result = await db.select().from(subscription_plans);
+
+    return NextResponse.json({
+      success: true,
+      data: result,
+    });
+  } catch (error: unknown) {
+    console.error(error);
+
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Something went wrong" },
       { status: 500 }
     );
   }
